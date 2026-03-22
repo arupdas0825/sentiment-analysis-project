@@ -1,6 +1,6 @@
 # 🧠 Sentiment Analysis Tool
 
-A Python-based Sentiment Analysis web app built with **TextBlob** and **Streamlit**.
+A Python-based Sentiment Analysis web app that detects emotions in text using NLP. Built with TextBlob & Streamlit, it supports single text, bulk, and CSV analysis with real-time visualizations. Designed for scalability with upcoming BERT integration, REST API, and multilingual support.
 
 ## 🚀 Features
 - Single text sentiment analysis
