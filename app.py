@@ -15,10 +15,10 @@ st.set_page_config(
 st.markdown("""
     <style>
     .main { background-color: #0f0f0f; }
-    .title { 
-        font-size: 2.5rem; 
-        font-weight: bold; 
-        color: #00d4ff; 
+    .title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #00d4ff;
         text-align: center;
     }
     .subtitle {
@@ -26,19 +26,13 @@ st.markdown("""
         color: #aaaaaa;
         margin-bottom: 2rem;
     }
-    .result-box {
-        background-color: #1e1e2e;
-        border-radius: 12px;
-        padding: 20px;
-        margin-top: 10px;
-    }
     </style>
 """, unsafe_allow_html=True)
 
 # ─── Title ─────────────────────────────────────────────
-st.markdown('<div class="title">🧠 Sentiment Analysis Tool</div>', 
+st.markdown('<div class="title">🧠 Sentiment Analysis Tool</div>',
             unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Analyze emotions behind any text using AI</div>', 
+st.markdown('<div class="subtitle">Analyze emotions behind any text using AI</div>',
             unsafe_allow_html=True)
 st.divider()
 
@@ -52,6 +46,23 @@ mode = st.sidebar.radio(
     "Mode select করো:",
     ["Single Text", "Multiple Texts", "Upload CSV"]
 )
+
+st.sidebar.divider()
+
+st.sidebar.subheader("🧠 NLP Engine")
+engine = st.sidebar.radio(
+    "Engine choose করো:",
+    ["VADER", "TextBlob", "BERT"],
+    help="VADER = Best for social media\nTextBlob = Simple & fast\nBERT = Most accurate (slow)"
+)
+
+if engine == "VADER":
+    st.sidebar.success("⚡ Fast | Great for social media text")
+elif engine == "TextBlob":
+    st.sidebar.info("🔵 Basic | Good for simple sentences")
+elif engine == "BERT":
+    st.sidebar.warning("🤖 Slow first load | Highest accuracy")
+
 st.sidebar.divider()
 st.sidebar.info("Made by **Arup** 🚀\nBrainware University")
 
@@ -69,9 +80,13 @@ if mode == "Single Text":
 
     if st.button("🔍 Analyze", use_container_width=True):
         if user_input.strip():
-            result = analyze_sentiment(user_input)
+            if engine == "BERT":
+                with st.spinner("🤖 BERT model loading... একটু wait করো!"):
+                    result = analyze_sentiment(user_input, engine)
+            else:
+                result = analyze_sentiment(user_input, engine)
 
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
 
             with col1:
                 st.metric(
@@ -90,8 +105,20 @@ if mode == "Single Text":
                     value=result['subjectivity'],
                     help="0 = Objective, 1 = Subjective"
                 )
+            with col4:
+                st.metric(
+                    label="Confidence",
+                    value=f"{result['confidence']}%",
+                    help="Model এর confidence score"
+                )
 
-            # Polarity Bar
+            if engine == "VADER" and "pos" in result:
+                st.divider()
+                v1, v2, v3 = st.columns(3)
+                v1.metric("Positive Score", result["pos"])
+                v2.metric("Negative Score", result["neg"])
+                v3.metric("Neutral Score", result["neu"])
+
             st.divider()
             st.write("**Polarity Meter:**")
             polarity_pct = (result['polarity'] + 1) / 2
@@ -103,6 +130,7 @@ if mode == "Single Text":
                 st.error(f"❌ এই text-টা **Negative** sentiment বহন করছে!")
             else:
                 st.warning(f"⚠️ এই text-টা **Neutral** sentiment বহন করছে!")
+
         else:
             st.warning("কিছু একটা লেখো আগে!")
 
@@ -122,18 +150,21 @@ elif mode == "Multiple Texts":
         texts = [t.strip() for t in raw.strip().split("\n") if t.strip()]
 
         if texts:
-            results = analyze_multiple(texts)
+            if engine == "BERT":
+                with st.spinner("🤖 BERT model loading... একটু wait করো!"):
+                    results = analyze_multiple(texts, engine)
+            else:
+                results = analyze_multiple(texts, engine)
+
             df = results_to_dataframe(results)
             summary = get_summary(results)
 
-            # Summary Cards
             st.divider()
             st.subheader("📊 Summary")
             cols = st.columns(4)
             for i, (key, val) in enumerate(summary.items()):
                 cols[i].metric(key, val)
 
-            # Pie Chart
             st.divider()
             st.subheader("🥧 Sentiment Distribution")
             labels = ["Positive 😊", "Negative 😞", "Neutral 😐"]
@@ -159,7 +190,6 @@ elif mode == "Multiple Texts":
                 at.set_color("white")
             st.pyplot(fig)
 
-            # Results Table
             st.divider()
             st.subheader("📄 Detailed Results")
             st.dataframe(df, use_container_width=True)
@@ -185,27 +215,30 @@ elif mode == "Upload CSV":
             st.success(f"✅ {len(texts)} টা text পাওয়া গেছে!")
 
             if st.button("🔍 Analyze CSV", use_container_width=True):
-                results = analyze_multiple(texts)
+                if engine == "BERT":
+                    with st.spinner("🤖 BERT model loading... একটু wait করো!"):
+                        results = analyze_multiple(texts, engine)
+                else:
+                    results = analyze_multiple(texts, engine)
+
                 df = results_to_dataframe(results)
                 summary = get_summary(results)
 
-                # Summary
                 st.divider()
                 st.subheader("📊 Summary")
                 cols = st.columns(4)
                 for i, (key, val) in enumerate(summary.items()):
                     cols[i].metric(key, val)
 
-                # Bar Chart
                 st.divider()
                 st.subheader("📊 Bar Chart")
                 fig, ax = plt.subplots(figsize=(6, 3))
                 fig.patch.set_facecolor("#1e1e2e")
                 ax.set_facecolor("#1e1e2e")
-                bars = ax.bar(
+                ax.bar(
                     ["Positive", "Negative", "Neutral"],
-                    [summary["Positive 😊"], 
-                     summary["Negative 😞"], 
+                    [summary["Positive 😊"],
+                     summary["Negative 😞"],
                      summary["Neutral 😐"]],
                     color=["#00d4ff", "#ff4b4b", "#ffa500"]
                 )
@@ -214,7 +247,6 @@ elif mode == "Upload CSV":
                     spine.set_edgecolor("#444")
                 st.pyplot(fig)
 
-                # Table + Download
                 st.divider()
                 st.subheader("📄 Detailed Results")
                 st.dataframe(df, use_container_width=True)
