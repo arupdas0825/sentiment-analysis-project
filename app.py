@@ -44,7 +44,7 @@ st.sidebar.image(
 st.sidebar.title("⚙️ Options")
 mode = st.sidebar.radio(
     "Mode select করো:",
-    ["Single Text", "Multiple Texts", "Upload CSV"]
+   ["Single Text", "Multiple Texts", "Upload CSV", "📊 Dashboard"]
 )
 
 st.sidebar.divider()
@@ -259,3 +259,118 @@ elif mode == "Upload CSV":
                     mime="text/csv",
                     use_container_width=True
                 )
+                # ══════════════════════════════════════════════════════
+# MODE 4 — Analytics Dashboard
+# ══════════════════════════════════════════════════════
+elif mode == "📊 Dashboard":
+    from dashboard import (
+        load_and_analyze,
+        plot_polarity_distribution,
+        generate_wordcloud,
+        get_top_sentences,
+        plot_word_frequency
+    )
+
+    st.subheader("📊 Analytics Dashboard")
+    st.info("Real dataset load করে full analysis দেখাও!")
+
+    col_upload, col_limit = st.columns(2)
+    with col_upload:
+        dash_file = st.file_uploader(
+            "Dataset upload করো (CSV):",
+            type=["csv"],
+            key="dashboard_upload"
+        )
+    with col_limit:
+        limit = st.slider(
+            "কতটা row analyze করবো?",
+            min_value=10,
+            max_value=500,
+            value=50,
+            step=10
+        )
+
+    use_sample = st.checkbox("Sample IMDB dataset use করো", value=True)
+
+    if st.button("🚀 Generate Dashboard", use_container_width=True):
+        with st.spinner("Dashboard তৈরি হচ্ছে..."):
+            if use_sample:
+                df, error = load_and_analyze("data/imdb.csv", engine, limit)
+            elif dash_file:
+                import tempfile, os
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
+                    tmp.write(dash_file.read())
+                    tmp_path = tmp.name
+                df, error = load_and_analyze(tmp_path, engine, limit)
+                os.unlink(tmp_path)
+            else:
+                st.warning("File upload করো অথবা sample dataset select করো!")
+                st.stop()
+
+        if error:
+            st.error(error)
+        else:
+            st.divider()
+            st.subheader("📈 Overview")
+            total = len(df)
+            pos = len(df[df["label"] == "Positive"])
+            neg = len(df[df["label"] == "Negative"])
+            neu = len(df[df["label"] == "Neutral"])
+            avg_conf = round(df["confidence"].mean(), 1)
+
+            c1, c2, c3, c4, c5 = st.columns(5)
+            c1.metric("Total", total)
+            c2.metric("Positive 😊", pos)
+            c3.metric("Negative 😞", neg)
+            c4.metric("Neutral 😐", neu)
+            c5.metric("Avg Confidence", f"{avg_conf}%")
+
+            st.divider()
+            st.subheader("📉 Polarity Distribution")
+            st.pyplot(plot_polarity_distribution(df))
+
+            st.divider()
+            st.subheader("🔤 Word Frequency")
+            st.pyplot(plot_word_frequency(df))
+
+            st.divider()
+            st.subheader("☁️ Word Cloud")
+            wc_filter = st.selectbox(
+                "Filter by sentiment:",
+                ["All", "Positive", "Negative", "Neutral"]
+            )
+            wc_fig = generate_wordcloud(df, wc_filter)
+            if wc_fig:
+                st.pyplot(wc_fig)
+
+            st.divider()
+            col_pos, col_neg = st.columns(2)
+            with col_pos:
+                st.subheader("🏆 Top 5 Positive")
+                for i, row in enumerate(get_top_sentences(df, "Positive"), 1):
+                    st.markdown(
+                        f"**{i}.** {row['text'][:80]}  "
+                        f"`Polarity: {row['polarity']}`"
+                    )
+            with col_neg:
+                st.subheader("💔 Top 5 Negative")
+                for i, row in enumerate(get_top_sentences(df, "Negative"), 1):
+                    st.markdown(
+                        f"**{i}.** {row['text'][:80]}  "
+                        f"`Polarity: {row['polarity']}`"
+                    )
+
+            st.divider()
+            st.subheader("📄 Full Results")
+            st.dataframe(
+                df[["text", "label", "polarity", "confidence"]],
+                use_container_width=True
+            )
+            csv_out = df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                "⬇️ Download Full Results",
+                data=csv_out,
+                file_name="dashboard_results.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
