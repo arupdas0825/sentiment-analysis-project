@@ -1,25 +1,12 @@
 from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from transformers import pipeline
 
-# ─── VADER Analyzer ────────────────────────────────────
+# ─── VADER ─────────────────────────────────────────────
 vader = SentimentIntensityAnalyzer()
-
-# ─── BERT Analyzer (lazy load) ─────────────────────────
-bert_analyzer = None
-
-def load_bert():
-    global bert_analyzer
-    if bert_analyzer is None:
-        bert_analyzer = pipeline(
-            "sentiment-analysis",
-            model="distilbert-base-uncased-finetuned-sst-2-english"
-        )
-    return bert_analyzer
 
 
 # ══════════════════════════════════════════════════════
-# TextBlob Analysis
+# TextBlob
 # ══════════════════════════════════════════════════════
 def analyze_textblob(text):
     blob = TextBlob(text)
@@ -27,14 +14,11 @@ def analyze_textblob(text):
     subjectivity = blob.sentiment.subjectivity
 
     if polarity > 0.1:
-        label = "Positive"
-        emoji = "😊"
+        label, emoji = "Positive", "😊"
     elif polarity < -0.1:
-        label = "Negative"
-        emoji = "😞"
+        label, emoji = "Negative", "😞"
     else:
-        label = "Neutral"
-        emoji = "😐"
+        label, emoji = "Neutral", "😐"
 
     return {
         "label": label,
@@ -47,21 +31,18 @@ def analyze_textblob(text):
 
 
 # ══════════════════════════════════════════════════════
-# VADER Analysis
+# VADER
 # ══════════════════════════════════════════════════════
 def analyze_vader(text):
     scores = vader.polarity_scores(text)
     compound = scores["compound"]
 
     if compound >= 0.05:
-        label = "Positive"
-        emoji = "😊"
+        label, emoji = "Positive", "😊"
     elif compound <= -0.05:
-        label = "Negative"
-        emoji = "😞"
+        label, emoji = "Negative", "😞"
     else:
-        label = "Neutral"
-        emoji = "😐"
+        label, emoji = "Neutral", "😐"
 
     return {
         "label": label,
@@ -77,34 +58,39 @@ def analyze_vader(text):
 
 
 # ══════════════════════════════════════════════════════
-# BERT Analysis
+# BERT — Safe Import
 # ══════════════════════════════════════════════════════
 def analyze_bert(text):
-    model = load_bert()
-
-    # BERT max token limit 512
-    truncated = text[:512]
-    result = model(truncated)[0]
-
-    raw_label = result["label"]
-    score = result["score"]
-
-    label = "Positive" if raw_label == "POSITIVE" else "Negative"
-    emoji = "😊" if label == "Positive" else "😞"
-    polarity = round(score if label == "Positive" else -score, 3)
-
-    return {
-        "label": label,
-        "polarity": polarity,
-        "subjectivity": 0.0,
-        "confidence": round(score * 100, 1),
-        "emoji": emoji,
-        "engine": "BERT"
-    }
+    try:
+        from transformers import pipeline
+        bert = pipeline(
+            "sentiment-analysis",
+            model="distilbert-base-uncased-finetuned-sst-2-english"
+        )
+        truncated = text[:512]
+        result = bert(truncated)[0]
+        raw_label = result["label"]
+        score = result["score"]
+        label = "Positive" if raw_label == "POSITIVE" else "Negative"
+        emoji = "😊" if label == "Positive" else "😞"
+        polarity = round(score if label == "Positive" else -score, 3)
+        return {
+            "label": label,
+            "polarity": polarity,
+            "subjectivity": 0.0,
+            "confidence": round(score * 100, 1),
+            "emoji": emoji,
+            "engine": "BERT"
+        }
+    except Exception as e:
+        # BERT fail করলে VADER দিয়ে fallback
+        result = analyze_vader(text)
+        result["engine"] = f"VADER (BERT unavailable: Python 3.13)"
+        return result
 
 
 # ══════════════════════════════════════════════════════
-# Main Function — Engine Select করে Call হবে
+# Main Functions
 # ══════════════════════════════════════════════════════
 def analyze_sentiment(text, engine="VADER"):
     if not text.strip():
