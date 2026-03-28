@@ -2,3 +2,12 @@ textblob
 streamlit
 pandas
 matplotlib
+vaderSentiment
+transformers
+torch
+wordcloud
+langdetect
+googletrans==4.0.0rc1
+fastapi
+uvicorn
+python-multipart
