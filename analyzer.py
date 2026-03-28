@@ -1,6 +1,5 @@
 from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from transformers import pipeline
 
 # ─── VADER Analyzer ────────────────────────────────────
 vader = SentimentIntensityAnalyzer()
@@ -8,9 +7,11 @@ vader = SentimentIntensityAnalyzer()
 # ─── BERT Analyzer (lazy load) ─────────────────────────
 bert_analyzer = None
 
+
 def load_bert():
     global bert_analyzer
     if bert_analyzer is None:
+        from transformers import pipeline
         bert_analyzer = pipeline(
             "sentiment-analysis",
             model="distilbert-base-uncased-finetuned-sst-2-english"
@@ -81,8 +82,6 @@ def analyze_vader(text):
 # ══════════════════════════════════════════════════════
 def analyze_bert(text):
     model = load_bert()
-
-    # BERT max token limit 512
     truncated = text[:512]
     result = model(truncated)[0]
 
@@ -104,7 +103,7 @@ def analyze_bert(text):
 
 
 # ══════════════════════════════════════════════════════
-# Main Function — Engine Select করে Call হবে
+# Main Function
 # ══════════════════════════════════════════════════════
 def analyze_sentiment(text, engine="VADER"):
     if not text.strip():

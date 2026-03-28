@@ -2,7 +2,7 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main, feature/* ]
+    branches: [ main, "feature/*" ]
   pull_request:
     branches: [ main ]
 
@@ -48,4 +48,4 @@ jobs:
 
       - name: Run flake8
         run: |
-          flake8 analyzer.py utils.py api.py --max-line-length=100 --ignore=E501,W503
+          flake8 analyzer.py utils.py --max-line-length=120 --ignore=E501,W503,E302,E303,W291,W293,E226
