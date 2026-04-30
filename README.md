@@ -15,6 +15,15 @@
 ## 🌐 Live Demo
 👉 [Click here to try the app](https://sentiment-analysis-project-wcny5vwfqgnqhnjbbr9lbl.streamlit.app)
 
+## Screenshots📸
+<img width="1903" height="889" alt="image" src="https://github.com/user-attachments/assets/bd7407a8-bf6e-43ad-ae56-b523df934396" />
+<img width="1904" height="863" alt="image" src="https://github.com/user-attachments/assets/cb602ea2-8543-4c37-97a9-5639ee1c89e1" />
+<img width="1907" height="843" alt="image" src="https://github.com/user-attachments/assets/9fb02a57-9329-4566-bec2-f8132ebe8393" />
+
+
+
+
+
 ---
 
 ## ✨ Features
