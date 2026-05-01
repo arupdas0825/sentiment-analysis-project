@@ -1,6 +1,6 @@
 # 🧠 Sentiment Analysis Tool
 
-[![Python CI](https://github.com/arupdas0825/sentiment-analysis-project/actions/workflows/python-ci.yml/badge.svg)](https://github.com/arupdas0825/sentiment-analysis-project/actions/workflows/main.yml)
+
 [![Live Demo](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://sentiment-analysis-project-wcny5vwfqgnqhnjbbr9lbl.streamlit.app)
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
 ![FastAPI](https://img.shields.io/badge/FastAPI-REST%20API-green?logo=fastapi)
