@@ -5,7 +5,7 @@ from analyzer import analyze_sentiment, analyze_multiple
 from utils import load_csv, results_to_dataframe, get_summary
 
 st.set_page_config(
-    page_title="SentiAI",
+    page_title="Sentiment Analysis Tool",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -13,59 +13,100 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-html, body, .stApp { background: #080B14 !important; font-family: 'Space Grotesk', sans-serif !important; }
-[data-testid="stSidebar"] { background: #0D1117 !important; border-right: 1px solid #1C2333 !important; }
-[data-testid="stSidebar"] * { font-family: 'Space Grotesk', sans-serif !important; }
-#MainMenu, footer, header { visibility: hidden; }
-.hero { text-align: center; padding: 2rem 0 1rem 0; }
-.hero-badge { display: inline-block; background: #00D4FF15; border: 1px solid #00D4FF30; color: #00D4FF; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; padding: 0.35rem 1rem; border-radius: 100px; margin-bottom: 1rem; }
-.hero-title { font-size: 3rem; font-weight: 700; letter-spacing: -0.03em; background: linear-gradient(135deg, #FFFFFF 0%, #00D4FF 60%, #7B61FF 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.6rem; }
-.hero-sub { color: #4A5568; font-size: 0.95rem; }
-.divider { height: 1px; background: linear-gradient(90deg, transparent, #1C2333 40%, #1C2333 60%, transparent); margin: 1.5rem 0; }
-.sec-title { font-size: 1.1rem; font-weight: 600; color: #CBD5E0; margin-bottom: 1rem; }
-.card-pos { background: #00FF8808; border: 1px solid #00FF8830; border-radius: 12px; padding: 1rem 1.4rem; color: #00FF88; font-weight: 600; margin-top: 1rem; }
-.card-neg { background: #FF4B4B08; border: 1px solid #FF4B4B30; border-radius: 12px; padding: 1rem 1.4rem; color: #FF4B4B; font-weight: 600; margin-top: 1rem; }
-.card-neu { background: #FFA50008; border: 1px solid #FFA50030; border-radius: 12px; padding: 1rem 1.4rem; color: #FFA500; font-weight: 600; margin-top: 1rem; }
-.engine-tag { display: inline-block; background: #1C2333; border: 1px solid #2D3748; color: #00D4FF; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; margin-top: 0.8rem; }
-.dev-card { background: #0D1117; border: 1px solid #1C2333; border-radius: 12px; padding: 1rem; text-align: center; margin-top: 0.5rem; }
-.dev-name { color: #E2E8F0; font-weight: 600; font-size: 0.88rem; }
-.dev-info { color: #4A5568; font-size: 0.72rem; margin-top: 0.2rem; }
-.dev-target { color: #00D4FF; font-size: 0.72rem; margin-top: 0.3rem; }
-[data-testid="stMetric"] { background: #0D1117 !important; border: 1px solid #1C2333 !important; border-radius: 12px !important; padding: 1rem !important; }
-[data-testid="stMetricLabel"] p { color: #4A5568 !important; font-size: 0.72rem !important; text-transform: uppercase; letter-spacing: 0.08em; }
-[data-testid="stMetricValue"] { color: #FFFFFF !important; font-family: 'JetBrains Mono', monospace !important; }
-.stButton > button { background: linear-gradient(135deg, #00D4FF, #7B61FF) !important; color: #000 !important; font-weight: 700 !important; border: none !important; border-radius: 10px !important; }
-.stButton > button:hover { opacity: 0.88 !important; }
-.stTextArea textarea { background: #0D1117 !important; border: 1px solid #1C2333 !important; border-radius: 10px !important; color: #E2E8F0 !important; font-family: 'Space Grotesk', sans-serif !important; }
-.stProgress > div > div { background: linear-gradient(90deg, #00D4FF, #7B61FF) !important; border-radius: 100px !important; }
-.stRadio label { color: #A0AEC0 !important; }
-.sb-logo { text-align: center; padding: 0.8rem 0 1rem 0; }
-.sb-logo-text { font-size: 1.25rem; font-weight: 700; background: linear-gradient(135deg, #00D4FF, #7B61FF); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.sb-logo-sub { font-size: 0.65rem; color: #4A5568; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 0.15rem; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap');
+
+/* Base */
+html, body, .stApp { background: #0B1120 !important; font-family: 'Inter', sans-serif !important; color: #F8FAFC !important; }
+[data-testid="stSidebar"] { background: #0F172A !important; border-right: 1px solid rgba(255,255,255,0.08) !important; }
+#MainMenu, footer { visibility: hidden; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* Top Right Fork */
+.fork-btn { position: absolute; top: 1rem; right: 1rem; color: #94A3B8; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; font-family: 'Inter', sans-serif; font-weight: 500; }
+
+/* Hero */
+.hero { text-align: center; padding: 3rem 0 1rem 0; }
+.hero-title { font-family: 'Poppins', sans-serif; font-size: 2.5rem; font-weight: 700; color: #F8FAFC; margin-bottom: 0.5rem; text-shadow: 0 0 20px rgba(34, 211, 238, 0.1); display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+.hero-title span { color: #22D3EE; }
+.hero-title img { width: 40px; }
+.hero-sub { color: #94A3B8; font-size: 1rem; font-weight: 400; }
+.divider { height: 1px; background: rgba(255,255,255,0.08); margin: 2rem 0; width: 100%; }
+
+/* Sections */
+.sec-title { font-family: 'Poppins', sans-serif; font-size: 1.2rem; font-weight: 500; color: #F8FAFC; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+.sec-title span { color: #4A5568; font-size: 1rem; }
+
+/* Sidebar */
+.sb-header { color: #94A3B8; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 0.5rem; margin-top: 1.5rem; font-family: 'Inter', sans-serif; }
+.sb-label { color: #F8FAFC; font-size: 0.85rem; margin-bottom: 0.5rem; font-family: 'Inter', sans-serif; }
+.engine-desc-card { background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 8px; padding: 0.75rem; color: #4ADE80; font-size: 0.8rem; margin-top: 1rem; font-family: 'Inter', sans-serif; }
+
+/* Sidebar Radio Buttons specific styling */
+[data-testid="stSidebar"] .stRadio label { color: #94A3B8 !important; font-weight: 500 !important; font-size: 0.95rem !important; }
+[data-testid="stSidebar"] .stRadio div[role="radiogroup"] > div { background: transparent; padding: 0.4rem 0.5rem; border-radius: 8px; transition: all 0.2s; margin-bottom: 0.2rem; }
+[data-testid="stSidebar"] .stRadio div[role="radiogroup"] > div:hover { background: rgba(255,255,255,0.05); }
+/* Make the checked radio option look a bit like a highlighted tab if possible via normal streamlit behavior, else it defaults nicely */
+
+/* Inputs */
+.stTextArea label { color: #F8FAFC !important; font-weight: 500 !important; font-size: 0.95rem !important; margin-bottom: 0.5rem !important; font-family: 'Inter', sans-serif; }
+.stTextArea textarea { background: #111827 !important; border: 1px solid rgba(255,255,255,0.08) !important; border-radius: 8px !important; color: #F8FAFC !important; font-family: 'Inter', sans-serif !important; padding: 1rem !important; font-size: 0.95rem !important; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2) !important; transition: border-color 0.2s ease, box-shadow 0.2s ease !important; }
+.stTextArea textarea:focus { border-color: #22D3EE !important; box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2) !important; }
+
+/* Button */
+.stButton > button { background: linear-gradient(90deg, #06B6D4, #38BDF8) !important; color: #0B1120 !important; font-weight: 600 !important; font-family: 'Inter', sans-serif !important; border: none !important; border-radius: 8px !important; padding: 0.6rem 1rem !important; font-size: 1rem !important; transition: all 0.2s ease !important; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3) !important; width: 100% !important; display: block !important; }
+.stButton > button:hover { opacity: 0.9 !important; transform: translateY(-1px) !important; box-shadow: 0 6px 16px rgba(6, 182, 212, 0.4) !important; }
+
+/* Metric Cards */
+[data-testid="stMetric"] { background: #111827 !important; border: 1px solid rgba(255,255,255,0.08) !important; border-radius: 8px !important; padding: 1rem 1.25rem !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important; }
+[data-testid="stMetricLabel"] p { color: #94A3B8 !important; font-size: 0.75rem !important; font-weight: 500 !important; text-transform: uppercase; letter-spacing: 0.05em; }
+[data-testid="stMetricValue"] { color: #F8FAFC !important; font-weight: 600 !important; font-size: 1.5rem !important; }
+
+/* Custom Result Cards */
+.card-pos, .card-neg, .card-neu { border-radius: 8px; padding: 1rem 1.25rem; font-weight: 500; margin-top: 1rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); }
+.card-pos { background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.2); color: #4ADE80; }
+.card-neg { background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); color: #F87171; }
+.card-neu { background: rgba(148, 163, 184, 0.05); border: 1px solid rgba(148, 163, 184, 0.2); color: #CBD5E1; }
+
+.engine-tag { display: inline-block; background: #111827; border: 1px solid rgba(255,255,255,0.08); color: #94A3B8; font-size: 0.7rem; font-weight: 500; padding: 0.25rem 0.5rem; border-radius: 4px; margin-top: 0.75rem; }
+
+/* Progress */
+.stProgress > div > div { background: #22D3EE !important; border-radius: 4px !important; }
+
+/* Dataframes */
+[data-testid="stDataFrame"] { border: 1px solid rgba(255,255,255,0.08) !important; border-radius: 8px !important; overflow: hidden !important; }
 </style>
 """, unsafe_allow_html=True)
 
 # ── Sidebar
 with st.sidebar:
-    st.markdown('<div class="sb-logo"><div class="sb-logo-text">🧠 SentiAI</div><div class="sb-logo-sub">Sentiment Analysis</div></div>', unsafe_allow_html=True)
-    st.markdown("---")
-    st.markdown("**⚡ Mode**")
-    mode = st.radio("Mode", ["Single Text", "Multiple Texts", "Upload CSV", "📊 Dashboard"])
-    st.markdown("---")
-    st.markdown("**🔬 NLP Engine**")
-    engine = st.radio("Engine", ["VADER", "TextBlob", "BERT"])
-    engine_desc = {"VADER": "⚡ Fast · Social media", "TextBlob": "🔵 Simple · General", "BERT": "🤖 Slow · Most accurate"}
-    st.caption(engine_desc[engine])
-    st.markdown("---")
+    st.markdown('<div style="display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 2rem; font-family: \'Poppins\', sans-serif;"><div style="font-size: 1.5rem;">🧠</div><div style="line-height: 1.2;"><div style="color: #F8FAFC; font-size: 1.1rem; font-weight: 700;">Sentiment</div><div style="font-size: 1.1rem; font-weight: 700; color: #22D3EE;">Analysis Tool</div></div></div>', unsafe_allow_html=True)
+    
+    st.markdown('<div class="sb-header">OPTIONS</div>', unsafe_allow_html=True)
+    mode = st.radio("OPTIONS", ["Single Text", "Multiple Texts", "Upload CSV", "Dashboard"], label_visibility="collapsed")
+    
+    st.markdown('<div class="sb-header">NLP ENGINE</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sb-label">Engine choose : </div>', unsafe_allow_html=True)
+    engine = st.radio("NLP ENGINE", ["VADER", "TextBlob", "BERT"], label_visibility="collapsed")
+    
+    if engine == "VADER":
+        st.markdown(f'<div class="engine-desc-card">⚡ Fast | Great for social media text</div>', unsafe_allow_html=True)
+    elif engine == "TextBlob":
+        st.markdown(f'<div class="engine-desc-card" style="color: #38BDF8; border-color: rgba(56,189,248,0.2); background: rgba(56,189,248,0.1);">🔵 Simple | General text analysis</div>', unsafe_allow_html=True)
+    elif engine == "BERT":
+        st.markdown(f'<div class="engine-desc-card" style="color: #F87171; border-color: rgba(248,113,113,0.2); background: rgba(248,113,113,0.1);">🤖 Slow | Most accurate neural model</div>', unsafe_allow_html=True)
+    
+    st.markdown('<div class="sb-header">SETTINGS</div>', unsafe_allow_html=True)
     multilingual = st.toggle("🌍 Multilingual Mode", value=False)
     if multilingual:
         st.caption("Detects Bengali, Hindi, German & more")
-    st.markdown("---")
-    st.markdown('<div class="dev-card"><div class="dev-name">Arup Das</div><div class="dev-info">Brainware University · CSE AIML</div><div class="dev-target">🎯 MSc Candidate — Germany</div></div>', unsafe_allow_html=True)
+
+st.markdown('<div class="fork-btn">Fork 🐙 :</div>', unsafe_allow_html=True)
 
 # ── Hero
-st.markdown('<div class="hero"><div class="hero-badge">🧠 NLP Powered</div><div class="hero-title">SentiAI</div><div class="hero-sub">Production-grade Sentiment Analysis · VADER · TextBlob · BERT</div></div><div class="divider"></div>', unsafe_allow_html=True)
+st.markdown('<div class="hero"><div class="hero-title">🧠 Sentiment <span>Analysis Tool</span></div><div class="hero-sub">Analyze emotions behind any text using AI</div></div><div class="divider"></div>', unsafe_allow_html=True)
 
 
 def safe_translate(text):
@@ -88,11 +129,10 @@ def safe_translate_multiple(texts):
 # MODE 1 — Single Text
 # ══════════════════════════════════════════════════════
 if mode == "Single Text":
-    st.markdown('<div class="sec-title">📝 Single Text Analysis</div>', unsafe_allow_html=True)
-    user_input = st.text_area("Enter text:", placeholder="Type or paste any text here...", height=130)
-    col_btn, _ = st.columns([1, 4])
-    with col_btn:
-        go = st.button("Analyze →", use_container_width=True)
+    st.markdown('<div class="sec-title">📝 Single Text Analysis <span>🔗</span></div>', unsafe_allow_html=True)
+    user_input = st.text_area("তোমার text এখানে লেখো:", placeholder="e.g. I love programming in Python!", height=150, max_chars=2000)
+    
+    go = st.button("🔍 Analyze", use_container_width=True)
 
     if go:
         if user_input.strip():
@@ -141,9 +181,8 @@ if mode == "Single Text":
 elif mode == "Multiple Texts":
     st.markdown('<div class="sec-title">📋 Multiple Text Analysis</div>', unsafe_allow_html=True)
     raw = st.text_area("Enter texts (one per line):", placeholder="I love this!\nThis is terrible.\nIt was okay.", height=180)
-    col_btn, _ = st.columns([1, 4])
-    with col_btn:
-        go_all = st.button("Analyze All →", use_container_width=True)
+    
+    go_all = st.button("🔍 Analyze All", use_container_width=True)
 
     if go_all:
         texts = [t.strip() for t in raw.strip().split("\n") if t.strip()]
@@ -174,10 +213,10 @@ elif mode == "Multiple Texts":
             col_chart, _ = st.columns([1, 1])
             with col_chart:
                 fig, ax = plt.subplots(figsize=(5, 4))
-                fig.patch.set_facecolor("#080B14")
-                ax.set_facecolor("#080B14")
+                fig.patch.set_facecolor("#0B1120")
+                ax.set_facecolor("#0B1120")
                 sizes = [summary["Positive 😊"], summary["Negative 😞"], summary["Neutral 😐"]]
-                wedges, _, autotexts = ax.pie(sizes, labels=["Positive", "Negative", "Neutral"], autopct="%1.1f%%", colors=["#00D4FF", "#FF4B4B", "#FFA500"], startangle=140, textprops={"color": "white", "fontsize": 10})
+                wedges, _, autotexts = ax.pie(sizes, labels=["Positive", "Negative", "Neutral"], autopct="%1.1f%%", colors=["#22D3EE", "#EF4444", "#94A3B8"], startangle=140, textprops={"color": "white", "fontsize": 10})
                 for at in autotexts:
                     at.set_color("white")
                 st.pyplot(fig)
@@ -201,9 +240,8 @@ elif mode == "Upload CSV":
             st.error(error)
         else:
             st.success(f"✅ {len(texts)} texts loaded")
-            col_btn, _ = st.columns([1, 4])
-            with col_btn:
-                go_csv = st.button("Analyze CSV →", use_container_width=True)
+            
+            go_csv = st.button("🔍 Analyze CSV", use_container_width=True)
 
             if go_csv:
                 with st.spinner("Analyzing..."):
@@ -220,12 +258,12 @@ elif mode == "Upload CSV":
 
                 st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
                 fig, ax = plt.subplots(figsize=(6, 3))
-                fig.patch.set_facecolor("#080B14")
-                ax.set_facecolor("#080B14")
-                ax.bar(["Positive", "Negative", "Neutral"], [summary["Positive 😊"], summary["Negative 😞"], summary["Neutral 😐"]], color=["#00D4FF", "#FF4B4B", "#FFA500"], width=0.45)
-                ax.tick_params(colors="#4A5568", labelsize=10)
+                fig.patch.set_facecolor("#0B1120")
+                ax.set_facecolor("#0B1120")
+                ax.bar(["Positive", "Negative", "Neutral"], [summary["Positive 😊"], summary["Negative 😞"], summary["Neutral 😐"]], color=["#22D3EE", "#EF4444", "#94A3B8"], width=0.45)
+                ax.tick_params(colors="#94A3B8", labelsize=10)
                 for sp in ax.spines.values():
-                    sp.set_edgecolor("#1C2333")
+                    sp.set_edgecolor("rgba(255,255,255,0.08)")
                 st.pyplot(fig)
 
                 st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
@@ -235,7 +273,7 @@ elif mode == "Upload CSV":
 # ══════════════════════════════════════════════════════
 # MODE 4 — Dashboard
 # ══════════════════════════════════════════════════════
-elif mode == "📊 Dashboard":
+elif mode == "Dashboard":
     st.markdown('<div class="sec-title">📊 Analytics Dashboard</div>', unsafe_allow_html=True)
     try:
         from dashboard import load_and_analyze, plot_polarity_distribution, generate_wordcloud, get_top_sentences, plot_word_frequency
@@ -247,9 +285,8 @@ elif mode == "📊 Dashboard":
             limit = st.slider("Rows:", 10, 500, 50, 10)
 
         use_sample = st.checkbox("Use sample IMDB dataset", value=True)
-        col_btn, _ = st.columns([1, 4])
-        with col_btn:
-            gen = st.button("Generate Dashboard →", use_container_width=True)
+        
+        gen = st.button("📊 Generate Dashboard", use_container_width=True)
 
         if gen:
             with st.spinner("Building dashboard..."):

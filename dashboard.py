@@ -31,8 +31,8 @@ def load_and_analyze(filepath, engine="VADER", limit=100):
 # ══════════════════════════════════════════════════════
 def plot_polarity_distribution(df):
     fig, ax = plt.subplots(figsize=(8, 4))
-    fig.patch.set_facecolor("#1e1e2e")
-    ax.set_facecolor("#1e1e2e")
+    fig.patch.set_facecolor("#0B1120")
+    ax.set_facecolor("#0B1120")
 
     colors = []
     for p in df["polarity"]:
@@ -81,14 +81,14 @@ def generate_wordcloud(df, sentiment_filter="All"):
     wc = WordCloud(
         width=800,
         height=400,
-        background_color="#1e1e2e",
+        background_color="#0B1120",
         colormap="cool",
         stopwords=stopwords,
         max_words=100
     ).generate(all_text)
 
     fig, ax = plt.subplots(figsize=(10, 5))
-    fig.patch.set_facecolor("#1e1e2e")
+    fig.patch.set_facecolor("#0B1120")
     ax.imshow(wc, interpolation="bilinear")
     ax.axis("off")
     ax.set_title(
@@ -133,8 +133,8 @@ def plot_word_frequency(df, top_n=15):
     counts = [f[1] for f in freq]
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    fig.patch.set_facecolor("#1e1e2e")
-    ax.set_facecolor("#1e1e2e")
+    fig.patch.set_facecolor("#0B1120")
+    ax.set_facecolor("#0B1120")
     ax.barh(words_list[::-1], counts[::-1], color="#00d4ff", alpha=0.8)
     ax.set_xlabel("Frequency", color="white")
     ax.set_title(f"Top {top_n} Most Frequent Words", color="white", fontsize=14)
