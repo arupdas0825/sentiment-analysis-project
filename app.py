@@ -1,391 +1,290 @@
+# UI Refinement applied successfully
 import streamlit as st
 import matplotlib.pyplot as plt
 import pandas as pd
 from analyzer import analyze_sentiment, analyze_multiple
 from utils import load_csv, results_to_dataframe, get_summary
 
-# ─── Page Config ───────────────────────────────────────
 st.set_page_config(
     page_title="Sentiment Analysis Tool",
     page_icon="🧠",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# ─── Custom CSS ────────────────────────────────────────
-st.markdown("""
-    <style>
-    .main { background-color: #0f0f0f; }
-    .title {
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: #00d4ff;
-        text-align: center;
-    }
-    .subtitle {
-        text-align: center;
-        color: #aaaaaa;
-        margin-bottom: 2rem;
-    }
-    </style>
-""", unsafe_allow_html=True)
+with open("style.css", "r", encoding="utf-8") as f:
+    css_content = f.read()
 
-# ─── Title ─────────────────────────────────────────────
-st.markdown('<div class="title">🧠 Sentiment Analysis Tool</div>',
-            unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Analyze emotions behind any text using AI</div>',
-            unsafe_allow_html=True)
-st.divider()
+st.markdown(f"<style>{css_content}</style>", unsafe_allow_html=True)
 
-# ─── Sidebar ───────────────────────────────────────────
-st.sidebar.image(
-    "https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.svg",
-    width=80
-)
-st.sidebar.title("⚙️ Options")
-mode = st.sidebar.radio(
-    "Mode select করো:",
-    ["Single Text", "Multiple Texts", "Upload CSV", "📊 Dashboard"]
-)
+# ── Sidebar
+with st.sidebar:
+    st.markdown('<div style="display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 2rem; font-family: \'Poppins\', sans-serif;"><div style="font-size: 1.5rem;">🧠</div><div style="line-height: 1.2;"><div style="color: #F8FAFC; font-size: 1.1rem; font-weight: 700;">Sentiment</div><div style="font-size: 1.1rem; font-weight: 700; color: #22D3EE;">Analysis Tool</div></div></div>', unsafe_allow_html=True)
+    
+    st.markdown('<div class="sb-header">OPTIONS</div>', unsafe_allow_html=True)
+    mode = st.radio("OPTIONS", ["Single Text", "Multiple Texts", "Upload CSV", "Dashboard"], label_visibility="collapsed")
+    
+    st.markdown('<div class="sb-header">NLP ENGINE</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sb-label">Engine choose : </div>', unsafe_allow_html=True)
+    engine = st.radio("NLP ENGINE", ["VADER", "TextBlob", "BERT"], label_visibility="collapsed")
+    
+    if engine == "VADER":
+        st.markdown(f'<div class="engine-desc-card">⚡ Fast | Great for social media text</div>', unsafe_allow_html=True)
+    elif engine == "TextBlob":
+        st.markdown(f'<div class="engine-desc-card" style="color: #38BDF8; border-color: rgba(56,189,248,0.2); background: rgba(56,189,248,0.1);">🔵 Simple | General text analysis</div>', unsafe_allow_html=True)
+    elif engine == "BERT":
+        st.markdown(f'<div class="engine-desc-card" style="color: #F87171; border-color: rgba(248,113,113,0.2); background: rgba(248,113,113,0.1);">🤖 Slow | Most accurate neural model</div>', unsafe_allow_html=True)
+    
+    st.markdown('<div class="sb-header">SETTINGS</div>', unsafe_allow_html=True)
+    multilingual = st.toggle("🌍 Multilingual Mode", value=False)
+    if multilingual:
+        st.caption("Detects Bengali, Hindi, German & more")
 
-st.sidebar.divider()
+st.markdown('<div class="fork-btn">Fork 🐙 :</div>', unsafe_allow_html=True)
 
-st.sidebar.subheader("🧠 NLP Engine")
-engine = st.sidebar.radio(
-    "Engine choose করো:",
-    ["VADER", "TextBlob", "BERT"],
-    help="VADER = Best for social media\nTextBlob = Simple & fast\nBERT = Most accurate (slow)"
-)
+# ── Hero
+st.markdown('<div class="hero"><div class="hero-title">🧠 Sentiment <span>Analysis Tool</span></div><div class="hero-sub">Analyze emotions behind any text using AI</div></div><div class="divider"></div>', unsafe_allow_html=True)
 
-if engine == "VADER":
-    st.sidebar.success("⚡ Fast | Great for social media text")
-elif engine == "TextBlob":
-    st.sidebar.info("🔵 Basic | Good for simple sentences")
-elif engine == "BERT":
-    st.sidebar.warning("🤖 Slow first load | Highest accuracy")
 
-st.sidebar.divider()
-st.sidebar.info("Made by **Arup** 🚀\nBrainware University")
+def safe_translate(text):
+    try:
+        from translator import translate_to_english
+        return translate_to_english(text)
+    except Exception:
+        return {"original": text, "translated": text, "lang_info": {"code": "en", "name": "English", "flag": "🇬🇧"}, "was_translated": False}
+
+
+def safe_translate_multiple(texts):
+    try:
+        from translator import translate_multiple
+        return translate_multiple(texts)
+    except Exception:
+        return [{"original": t, "translated": t, "lang_info": {"code": "en", "name": "English", "flag": "🇬🇧"}, "was_translated": False} for t in texts]
+
 
 # ══════════════════════════════════════════════════════
 # MODE 1 — Single Text
 # ══════════════════════════════════════════════════════
 if mode == "Single Text":
-    st.subheader("📝 Single Text Analysis")
+    st.markdown('<div class="sec-title">📝 Single Text Analysis <span>🔗</span></div>', unsafe_allow_html=True)
+    user_input = st.text_area("তোমার text এখানে লেখো:", placeholder="e.g. I love programming in Python!", height=150, max_chars=2000)
+    
+    go = st.button("🔍 Analyze", use_container_width=True)
 
-    user_input = st.text_area(
-        "তোমার text এখানে লেখো:",
-        placeholder="e.g. I love programming in Python!",
-        height=150
-    )
-
-    if st.button("🔍 Analyze", use_container_width=True):
+    if go:
         if user_input.strip():
-            if engine == "BERT":
-                with st.spinner("🤖 BERT model loading... একটু wait করো!"):
-                    result = analyze_sentiment(user_input, engine)
-            else:
-                result = analyze_sentiment(user_input, engine)
+            with st.spinner("Analyzing..."):
+                if multilingual:
+                    trans = safe_translate(user_input)
+                    analysis_text = trans["translated"]
+                    lang = trans["lang_info"]
+                    if trans["was_translated"]:
+                        st.info(f"{lang['flag']} **{lang['name']}** detected → Translated: *{analysis_text}*")
+                else:
+                    analysis_text = user_input
+                result = analyze_sentiment(analysis_text, engine)
 
-            col1, col2, col3, col4 = st.columns(4)
-
-            with col1:
-                st.metric(
-                    label="Sentiment",
-                    value=f"{result['emoji']} {result['label']}"
-                )
-            with col2:
-                st.metric(
-                    label="Polarity",
-                    value=result['polarity'],
-                    help="-1 = Negative, +1 = Positive"
-                )
-            with col3:
-                st.metric(
-                    label="Subjectivity",
-                    value=result['subjectivity'],
-                    help="0 = Objective, 1 = Subjective"
-                )
-            with col4:
-                st.metric(
-                    label="Confidence",
-                    value=f"{result['confidence']}%",
-                    help="Model এর confidence score"
-                )
+            st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Sentiment", f"{result['emoji']} {result['label']}")
+            c2.metric("Polarity", result["polarity"])
+            c3.metric("Subjectivity", result["subjectivity"])
+            c4.metric("Confidence", f"{result['confidence']}%")
 
             if engine == "VADER" and "pos" in result:
-                st.divider()
+                st.markdown("<br>", unsafe_allow_html=True)
                 v1, v2, v3 = st.columns(3)
-                v1.metric("Positive Score", result["pos"])
-                v2.metric("Negative Score", result["neg"])
+                v1.metric("Positive", result["pos"])
+                v2.metric("Negative", result["neg"])
                 v3.metric("Neutral Score", result["neu"])
 
-            st.divider()
-            st.write("**Polarity Meter:**")
-            polarity_pct = (result['polarity'] + 1) / 2
-            st.progress(polarity_pct)
+            st.markdown("<br>**Polarity Meter**", unsafe_allow_html=True)
+            st.progress((result["polarity"] + 1) / 2)
 
-            if result['label'] == "Positive":
-                st.success(f"✅ এই text-টা **Positive** sentiment বহন করছে!")
-            elif result['label'] == "Negative":
-                st.error(f"❌ এই text-টা **Negative** sentiment বহন করছে!")
+            if result["label"] == "Positive":
+                st.markdown('<div class="card-pos">✅ Positive Sentiment Detected</div>', unsafe_allow_html=True)
+            elif result["label"] == "Negative":
+                st.markdown('<div class="card-neg">❌ Negative Sentiment Detected</div>', unsafe_allow_html=True)
             else:
-                st.warning(f"⚠️ এই text-টা **Neutral** sentiment বহন করছে!")
+                st.markdown('<div class="card-neu">⚪ Neutral Sentiment Detected</div>', unsafe_allow_html=True)
 
+            st.markdown(f'<div class="engine-tag">Engine: {result["engine"]}</div>', unsafe_allow_html=True)
         else:
-            st.warning("কিছু একটা লেখো আগে!")
+            st.warning("Please enter some text first.")
 
 # ══════════════════════════════════════════════════════
 # MODE 2 — Multiple Texts
 # ══════════════════════════════════════════════════════
 elif mode == "Multiple Texts":
-    st.subheader("📋 Multiple Text Analysis")
+    st.markdown('<div class="sec-title">📋 Multiple Text Analysis</div>', unsafe_allow_html=True)
+    raw = st.text_area("Enter texts (one per line):", placeholder="I love this!\nThis is terrible.\nIt was okay.", height=180)
+    
+    go_all = st.button("🔍 Analyze All", use_container_width=True)
 
-    raw = st.text_area(
-        "প্রতিটা line-এ একটা করে text লেখো:",
-        placeholder="I love this!\nThis is terrible.\nThe day was okay.",
-        height=200
-    )
-
-    if st.button("🔍 Analyze All", use_container_width=True):
+    if go_all:
         texts = [t.strip() for t in raw.strip().split("\n") if t.strip()]
-
         if texts:
-            if engine == "BERT":
-                with st.spinner("🤖 BERT model loading... একটু wait করো!"):
-                    results = analyze_multiple(texts, engine)
-            else:
-                results = analyze_multiple(texts, engine)
+            with st.spinner("Analyzing..."):
+                if multilingual:
+                    trans_all = safe_translate_multiple(texts)
+                    n_trans = sum(1 for t in trans_all if t["was_translated"])
+                    if n_trans > 0:
+                        st.info(f"🌍 {n_trans} text(s) translated")
+                    analysis_texts = [t["translated"] for t in trans_all]
+                else:
+                    analysis_texts = texts
+                results = analyze_multiple(analysis_texts, engine)
 
             df = results_to_dataframe(results)
             summary = get_summary(results)
 
-            st.divider()
-            st.subheader("📊 Summary")
-            cols = st.columns(4)
-            for i, (key, val) in enumerate(summary.items()):
-                cols[i].metric(key, val)
+            st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+            st.markdown('<div class="sec-title">📊 Summary</div>', unsafe_allow_html=True)
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Total", summary["Total"])
+            c2.metric("Positive 😊", summary["Positive 😊"])
+            c3.metric("Negative 😞", summary["Negative 😞"])
+            c4.metric("Neutral 😐", summary["Neutral 😐"])
 
-            st.divider()
-            st.subheader("🥧 Sentiment Distribution")
-            labels = ["Positive 😊", "Negative 😞", "Neutral 😐"]
-            sizes = [
-                summary["Positive 😊"],
-                summary["Negative 😞"],
-                summary["Neutral 😐"]
-            ]
-            colors = ["#00d4ff", "#ff4b4b", "#ffa500"]
+            st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+            col_chart, _ = st.columns([1, 1])
+            with col_chart:
+                fig, ax = plt.subplots(figsize=(5, 4))
+                fig.patch.set_facecolor("#0B1120")
+                ax.set_facecolor("#0B1120")
+                sizes = [summary["Positive 😊"], summary["Negative 😞"], summary["Neutral 😐"]]
+                wedges, _, autotexts = ax.pie(sizes, labels=["Positive", "Negative", "Neutral"], autopct="%1.1f%%", colors=["#22D3EE", "#EF4444", "#94A3B8"], startangle=140, textprops={"color": "white", "fontsize": 10})
+                for at in autotexts:
+                    at.set_color("white")
+                st.pyplot(fig)
 
-            fig, ax = plt.subplots(figsize=(5, 4))
-            fig.patch.set_facecolor("#1e1e2e")
-            ax.set_facecolor("#1e1e2e")
-            wedges, texts_plt, autotexts = ax.pie(
-                sizes,
-                labels=labels,
-                autopct="%1.1f%%",
-                colors=colors,
-                startangle=140,
-                textprops={"color": "white"}
-            )
-            for at in autotexts:
-                at.set_color("white")
-            st.pyplot(fig)
-
-            st.divider()
-            st.subheader("📄 Detailed Results")
-            st.dataframe(df, use_container_width=True)
-
+            st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+            st.dataframe(df, use_container_width=True, hide_index=True)
         else:
-            st.warning("কিছু একটা লেখো আগে!")
+            st.warning("Please enter at least one text.")
 
 # ══════════════════════════════════════════════════════
 # MODE 3 — Upload CSV
 # ══════════════════════════════════════════════════════
 elif mode == "Upload CSV":
-    st.subheader("📁 CSV File Upload")
-    st.info("CSV file-এ অবশ্যই **'text'** নামের একটা column থাকতে হবে।")
-
-    uploaded = st.file_uploader("CSV file choose করো:", type=["csv"])
+    st.markdown('<div class="sec-title">📁 CSV Upload</div>', unsafe_allow_html=True)
+    st.info("CSV must have a column named **text**")
+    uploaded = st.file_uploader("Choose CSV file", type=["csv"])
 
     if uploaded:
         texts, error = load_csv(uploaded)
-
-        if error:
-            st.error(f"Error: {error}")
-        else:
-            st.success(f"✅ {len(texts)} টা text পাওয়া গেছে!")
-
-            if st.button("🔍 Analyze CSV", use_container_width=True):
-                if engine == "BERT":
-                    with st.spinner("🤖 BERT model loading... একটু wait করো!"):
-                        results = analyze_multiple(texts, engine)
-                else:
-                    results = analyze_multiple(texts, engine)
-
-                df = results_to_dataframe(results)
-                summary = get_summary(results)
-
-                st.divider()
-                st.subheader("📊 Summary")
-                cols = st.columns(4)
-                for i, (key, val) in enumerate(summary.items()):
-                    cols[i].metric(key, val)
-
-                st.divider()
-                st.subheader("📊 Bar Chart")
-                fig, ax = plt.subplots(figsize=(6, 3))
-                fig.patch.set_facecolor("#1e1e2e")
-                ax.set_facecolor("#1e1e2e")
-                ax.bar(
-                    ["Positive", "Negative", "Neutral"],
-                    [summary["Positive 😊"],
-                     summary["Negative 😞"],
-                     summary["Neutral 😐"]],
-                    color=["#00d4ff", "#ff4b4b", "#ffa500"]
-                )
-                ax.tick_params(colors="white")
-                for spine in ax.spines.values():
-                    spine.set_edgecolor("#444")
-                st.pyplot(fig)
-
-                st.divider()
-                st.subheader("📄 Detailed Results")
-                st.dataframe(df, use_container_width=True)
-
-                csv_out = df.to_csv(index=False).encode("utf-8")
-                st.download_button(
-                    "⬇️ Download Results CSV",
-                    data=csv_out,
-                    file_name="sentiment_results.csv",
-                    mime="text/csv",
-                    use_container_width=True
-                )
-            # ══════════════════════════════════════════════════════
-# MODE 4 — Analytics Dashboard
-# ══════════════════════════════════════════════════════
-elif mode == "📊 Dashboard":
-    from dashboard import (
-        load_and_analyze,
-        plot_polarity_distribution,
-        generate_wordcloud,
-        get_top_sentences,
-        plot_word_frequency
-    )
-
-    st.subheader("📊 Analytics Dashboard")
-    st.info("Real dataset load করে full analysis দেখাও!")
-
-    col_upload, col_limit = st.columns(2)
-
-    with col_upload:
-        dash_file = st.file_uploader(
-            "Dataset upload করো (CSV):",
-            type=["csv"],
-            key="dashboard_upload"
-        )
-
-    with col_limit:
-        limit = st.slider(
-            "কতটা row analyze করবো?",
-            min_value=10,
-            max_value=500,
-            value=50,
-            step=10
-        )
-
-    # Default sample dataset
-    use_sample = st.checkbox("Sample IMDB dataset use করো", value=True)
-
-    if st.button("🚀 Generate Dashboard", use_container_width=True):
-        with st.spinner("Dashboard তৈরি হচ্ছে..."):
-
-            if use_sample:
-                df, error = load_and_analyze("data/imdb.csv", engine, limit)
-            elif dash_file:
-                import tempfile, os
-                with tempfile.NamedTemporaryFile(
-                    delete=False, suffix=".csv"
-                ) as tmp:
-                    tmp.write(dash_file.read())
-                    tmp_path = tmp.name
-                df, error = load_and_analyze(tmp_path, engine, limit)
-                os.unlink(tmp_path)
-            else:
-                st.warning("File upload করো অথবা sample dataset select করো!")
-                st.stop()
-
         if error:
             st.error(error)
         else:
-            # ── Summary Cards
-            st.divider()
-            st.subheader("📈 Overview")
-            total = len(df)
-            pos = len(df[df["label"] == "Positive"])
-            neg = len(df[df["label"] == "Negative"])
-            neu = len(df[df["label"] == "Neutral"])
-            avg_conf = round(df["confidence"].mean(), 1)
+            st.success(f"✅ {len(texts)} texts loaded")
+            
+            go_csv = st.button("🔍 Analyze CSV", use_container_width=True)
 
-            c1, c2, c3, c4, c5 = st.columns(5)
-            c1.metric("Total", total)
-            c2.metric("Positive 😊", pos)
-            c3.metric("Negative 😞", neg)
-            c4.metric("Neutral 😐", neu)
-            c5.metric("Avg Confidence", f"{avg_conf}%")
+            if go_csv:
+                with st.spinner("Analyzing..."):
+                    results = analyze_multiple(texts, engine)
+                df = results_to_dataframe(results)
+                summary = get_summary(results)
 
-            # ── Polarity Distribution
-            st.divider()
-            st.subheader("📉 Polarity Distribution")
-            st.pyplot(plot_polarity_distribution(df))
+                st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("Total", summary["Total"])
+                c2.metric("Positive 😊", summary["Positive 😊"])
+                c3.metric("Negative 😞", summary["Negative 😞"])
+                c4.metric("Neutral 😐", summary["Neutral 😐"])
 
-            # ── Word Frequency
-            st.divider()
-            st.subheader("🔤 Word Frequency")
-            st.pyplot(plot_word_frequency(df))
+                st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+                fig, ax = plt.subplots(figsize=(6, 3))
+                fig.patch.set_facecolor("#0B1120")
+                ax.set_facecolor("#0B1120")
+                ax.bar(["Positive", "Negative", "Neutral"], [summary["Positive 😊"], summary["Negative 😞"], summary["Neutral 😐"]], color=["#22D3EE", "#EF4444", "#94A3B8"], width=0.45)
+                ax.tick_params(colors="#94A3B8", labelsize=10)
+                for sp in ax.spines.values():
+                    sp.set_edgecolor("rgba(255,255,255,0.08)")
+                st.pyplot(fig)
 
-            # ── WordCloud
-            st.divider()
-            st.subheader("☁️ Word Cloud")
-            wc_filter = st.selectbox(
-                "Filter by sentiment:",
-                ["All", "Positive", "Negative", "Neutral"]
-            )
-            wc_fig = generate_wordcloud(df, wc_filter)
-            if wc_fig:
-                st.pyplot(wc_fig)
+                st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+                st.dataframe(df, use_container_width=True, hide_index=True)
+                st.download_button("⬇️ Download Results", data=df.to_csv(index=False).encode("utf-8"), file_name="sentiment_results.csv", mime="text/csv", use_container_width=True)
 
-            # ── Top Sentences
-            st.divider()
-            col_pos, col_neg = st.columns(2)
+# ══════════════════════════════════════════════════════
+# MODE 4 — Dashboard
+# ══════════════════════════════════════════════════════
+elif mode == "Dashboard":
+    st.markdown('<div class="sec-title">📊 Analytics Dashboard</div>', unsafe_allow_html=True)
+    try:
+        from dashboard import load_and_analyze, plot_polarity_distribution, generate_wordcloud, get_top_sentences, plot_word_frequency
 
-            with col_pos:
-                st.subheader("🏆 Top 5 Positive")
-                top_pos = get_top_sentences(df, "Positive", 5)
-                for i, row in enumerate(top_pos, 1):
-                    st.markdown(
-                        f"**{i}.** {row['text'][:80]}...  "
-                        f"`Polarity: {row['polarity']}`"
-                    )
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            dash_file = st.file_uploader("Upload Dataset (CSV):", type=["csv"])
+        with col2:
+            limit = st.slider("Rows:", 10, 500, 50, 10)
 
-            with col_neg:
-                st.subheader("💔 Top 5 Negative")
-                top_neg = get_top_sentences(df, "Negative", 5)
-                for i, row in enumerate(top_neg, 1):
-                    st.markdown(
-                        f"**{i}.** {row['text'][:80]}...  "
-                        f"`Polarity: {row['polarity']}`"
-                    )
+        use_sample = st.checkbox("Use sample IMDB dataset", value=True)
+        
+        gen = st.button("📊 Generate Dashboard", use_container_width=True)
 
-            # ── Full Data Table
-            st.divider()
-            st.subheader("📄 Full Results")
-            st.dataframe(df[["text", "label", "polarity", "confidence"]], 
-                        use_container_width=True)
+        if gen:
+            with st.spinner("Building dashboard..."):
+                if use_sample:
+                    df, error = load_and_analyze("data/imdb.csv", engine, limit)
+                elif dash_file:
+                    import tempfile, os
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
+                        tmp.write(dash_file.read())
+                        tmp_path = tmp.name
+                    df, error = load_and_analyze(tmp_path, engine, limit)
+                    os.unlink(tmp_path)
+                else:
+                    st.warning("Upload a file or use sample dataset.")
+                    st.stop()
 
-            csv_out = df.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                "⬇️ Download Full Results",
-                data=csv_out,
-                file_name="dashboard_results.csv",
-                mime="text/csv",
-                use_container_width=True
-            )    
+            if error:
+                st.error(error)
+            else:
+                st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+                total = len(df)
+                pos = len(df[df["label"] == "Positive"])
+                neg = len(df[df["label"] == "Negative"])
+                neu = len(df[df["label"] == "Neutral"])
+                avg_c = round(df["confidence"].mean(), 1)
+
+                c1, c2, c3, c4, c5 = st.columns(5)
+                c1.metric("Total", total)
+                c2.metric("Positive 😊", pos)
+                c3.metric("Negative 😞", neg)
+                c4.metric("Neutral 😐", neu)
+                c5.metric("Avg Confidence", f"{avg_c}%")
+
+                st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+                st.markdown('<div class="sec-title">📉 Polarity Distribution</div>', unsafe_allow_html=True)
+                st.pyplot(plot_polarity_distribution(df))
+
+                st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+                st.markdown('<div class="sec-title">🔤 Word Frequency</div>', unsafe_allow_html=True)
+                st.pyplot(plot_word_frequency(df))
+
+                st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+                st.markdown('<div class="sec-title">☁️ Word Cloud</div>', unsafe_allow_html=True)
+                wc_filter = st.selectbox("Filter:", ["All", "Positive", "Negative", "Neutral"])
+                wc_fig = generate_wordcloud(df, wc_filter)
+                if wc_fig:
+                    st.pyplot(wc_fig)
+
+                st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+                col_p, col_n = st.columns(2)
+                with col_p:
+                    st.markdown('<div class="sec-title">🏆 Top Positive</div>', unsafe_allow_html=True)
+                    for i, r in enumerate(get_top_sentences(df, "Positive", 5), 1):
+                        st.markdown(f"**{i}.** {r['text'][:70]}... `{r['polarity']}`")
+                with col_n:
+                    st.markdown('<div class="sec-title">💔 Top Negative</div>', unsafe_allow_html=True)
+                    for i, r in enumerate(get_top_sentences(df, "Negative", 5), 1):
+                        st.markdown(f"**{i}.** {r['text'][:70]}... `{r['polarity']}`")
+
+                st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+                st.dataframe(df[["text", "label", "polarity", "confidence"]], use_container_width=True, hide_index=True)
+                st.download_button("⬇️ Download Results", data=df.to_csv(index=False).encode("utf-8"), file_name="dashboard_results.csv", mime="text/csv", use_container_width=True)
+    except ImportError:
+        st.error("dashboard.py not found.")
