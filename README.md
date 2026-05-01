@@ -13,7 +13,7 @@
 ---
 
 ## 🌐 Live Demo
-👉 [Click here to try the app](https://sentiment-analysis-project-wcny5vwfqgnqhnjbbr9lbl.streamlit.app)
+👉 [Click here to try the app](https://sentiment-analysis-project-zvtb4q6vncknfc5qvkb63w.streamlit.app/)
 
 ## Screenshots📸
 <img width="1903" height="889" alt="image" src="https://github.com/user-attachments/assets/bd7407a8-bf6e-43ad-ae56-b523df934396" />
